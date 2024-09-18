@@ -1,0 +1,130 @@
+.App {
+  text-align: center;
+  margin-top: 50px;
+  background-color: #333; /* Charcoal background */
+  color: #fff; /* White text */
+  min-height: 100vh;
+}
+
+h1 {
+  color: #fff; /* White text for the heading */
+}
+
+.input-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+input,
+textarea,
+button {
+  padding: 10px;
+  font-size: 16px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+}
+
+textarea {
+  width: 300px;
+  height: 100px;
+}
+
+input[type="color"] {
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  border: none;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+li {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding: 10px;
+  font-size: 18px;
+  background-color: #444;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  color: #fff; /* White text for the task */
+  position: relative;
+}
+
+.completed {
+  background-color: #555;
+  text-decoration: line-through; /* Strikethrough text for completed tasks */
+}
+
+.task-color {
+  width: 30px;
+  height: 30px;
+  margin-right: 10px;
+  display: inline-block;
+  border-radius: 5px;
+}
+
+.task-details {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.task-text {
+  flex: 1;
+}
+
+.separator {
+  margin: 0 10px;
+}
+
+.task-time {
+  flex: 1;
+}
+
+.task-timer {
+  flex: 1;
+}
+
+.task-separator {
+  border-top: 1px solid #555;
+  margin: 10px 0;
+}
+
+.task-notes {
+  color: #ddd;
+}
+
+.complete-checkbox {
+  margin-right: 10px;
+}
+
+.delete-button {
+  background-color: #f00; /* Red background for delete button */
+  color: #fff; /* White text for delete button */
+  border: none;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.delete-button:hover {
+  background-color: #c00; /* Darker red on hover */
+}
+
+.instructions {
+  position: absolute;
+  top: 70px;
+  left: 20px;
+  background-color: #555;
+  color: #fff;
+  padding: 10px;
+  border-radius: 5px;
+}
