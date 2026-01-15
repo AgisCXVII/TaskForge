@@ -100,7 +100,7 @@ function App() {
 
   return (
     <div className="App">
-      <h1>TaskForge</h1>
+      <h1>CrossPost</h1>
       <div className="input-container">
         <input
           type="text"

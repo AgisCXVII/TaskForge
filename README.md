@@ -1,6 +1,6 @@
-# TaskForge
+# CrossPost
 
-**TaskForge** is a productivity application designed to help you manage your tasks effectively. Created by a coding enthusiast new to the field, this app aims to offer a practical solution for task tracking, prioritization, and real-time management. It’s particularly useful in both personal and workplace settings, where efficient task management is crucial.
+**CrossPost** is a productivity application designed to help you manage your tasks effectively. Created by a coding enthusiast new to the field, this app aims to offer a practical solution for task tracking, prioritization, and real-time management. It’s particularly useful in both personal and workplace settings, where efficient task management is crucial.
 
 ## Features
 
@@ -12,15 +12,15 @@
 
 ## Installation
 
-To get started with TaskForge on your local machine:
+To get started with CrossPost on your local machine:
 
 1. **Clone the Repository:**
 
    ```bash
-   git clone https://github.com/username/my-productivity-app.git
+   git clone https://github.com/username/crosspost.git
 2. **Navigate to the Project Directory**
    ```bash
-    cd my-productivity-app
+    cd crosspost
 3. **Install Dependencies**
    *Make sure you have Node.js and npm installed. Then, run:*
    ```bash
@@ -44,7 +44,7 @@ To get started with TaskForge on your local machine:
 
 ## Contribution
 
-Feel free to contribute to TaskForge by submitting issues, creating pull requests, or suggesting features. Your feedback is valuable and helps improve the application.
+Feel free to contribute to CrossPost by submitting issues, creating pull requests, or suggesting features. Your feedback is valuable and helps improve the application.
 
 ## License
 
@@ -53,4 +53,3 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 ## Acknowledgments
 
 Special thanks to my Discord for giving me a nudge on what to build and my project manager for giving me such a task to do.
-
