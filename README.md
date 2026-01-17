@@ -1,56 +1,65 @@
-# TaskForge
+# CrossPost
 
-**TaskForge** is a productivity application designed to help you manage your tasks effectively. Created by a coding enthusiast new to the field, this app aims to offer a practical solution for task tracking, prioritization, and real-time management. It’s particularly useful in both personal and workplace settings, where efficient task management is crucial.
+CrossPostTool helps creators prepare one post and adapt it to multiple platforms with clear constraints, manual checklists, and safe defaults. The tool keeps you in control: generate drafts, review warnings, and post manually.
 
-## Features
+## Core workflow
 
-- **Task Management:** Easily add and organize tasks with customizable colors and notes.
-- **Real-Time Timer:** Track the time remaining for each task with a countdown timer that adjusts in real time.
-- **Priority Tasking:** Assign colors to tasks to easily identify and prioritize them.
-- **Notes:** Attach detailed notes to tasks for better context and reminders.
-- **User-Friendly Interface:** Enjoy a clean and intuitive UI that helps you stay focused and organized.
+1. Compose a base post (title, description, link, hashtags).
+2. Select target platforms and generate platform drafts.
+3. Review warnings, checklists, and readiness.
+4. Open upload pages and post manually.
 
-## Installation
+## Run locally
 
-To get started with TaskForge on your local machine:
+```bash
+npm install
+npm start
+```
 
-1. **Clone the Repository:**
+## Changelog
 
-   ```bash
-   git clone https://github.com/username/my-productivity-app.git
-2. **Navigate to the Project Directory**
-   ```bash
-    cd my-productivity-app
-3. **Install Dependencies**
-   *Make sure you have Node.js and npm installed. Then, run:*
-   ```bash
-   npm install
-4. **Start the Application**
-   ```bash
-   npm start
-## Usage
+### v0.0.6c
+- Removed Copy actions and added Post/Post all controls with posting states.
+- Updated readiness flow to Unknown → Checking → Ready/Blocked with richer details panels.
+- Moved media requirement metadata into Plan/Deliver details and refined destination labels.
 
-- **Add a Task:** Enter a task description, time frame (e.g., `2h`, `30m`, `120s`, `1d`), choose a color, and add notes.
-- **Track Time:** Use the real-time timer to see how much time is left for each task.
-- **Mark as Complete:** Use the checkbox to mark tasks as complete or delete them when done.
-- **Save Tasks:** Tasks are saved automatically in your local storage.
+### v0.0.6b
+- Moved Prev/Next into a footer navigator with Plan gating and stateful step progression.
+- Simplified Deliver with copy bundle, readiness dots, and manual-ready confirmation only.
+- Humanized destination labels and removed Deliver metadata clutter.
 
-## Planned Features
+### v0.0.6
+- Simplified Deliver to a single selected-platform card list with automatic readiness checks and status dots.
+- Added passive readiness summary with a manual recheck action and refined Deliver actions.
+- Updated Plan → Compose → Deliver flow to version v0.0.6.
 
-- **Checkbox for Task Completion:** Implement functionality to mark tasks as complete and archive them.
-- **Task Saving and Retrieval:** Develop a way to save tasks and retrieve them upon reopening the app.
-- **Mobile Responsiveness:** Ensure the app is fully functional and visually appealing on mobile devices.
-- **Enhanced UI Design:** Improve the front-end design for a more polished and user-friendly experience.
+### v0.0.5
+- Reordered workflow into Plan, Compose, Deliver with Prev/Next navigation and stateful mode switching.
+- Expanded Plan and Compose layouts to reclaim full width and added quick presets with platform targeting summary.
+- Added Compose title overrides and soft guidance plus moved drafts/readiness to Deliver.
 
-## Contribution
+### v3.2.2
+- Added mode hint panels for Compose, Execute, and Review to guide user workflow.
+- Improved active mode selector styling for clearer phase indication.
+- Tightened collapsed Review card layout for better 1080p scanability.
+- Added optional Single expand toggle for platform draft cards.
+- Minor copy consistency improvements across UI.
 
-Feel free to contribute to TaskForge by submitting issues, creating pull requests, or suggesting features. Your feedback is valuable and helps improve the application.
+### v3.2.1
+- Implemented functional mode switching (Compose, Execute, Review) with mode-based panel visibility.
+- Preserved form and UI state across mode switches.
+- Reset now clears state across all modes and returns to Compose.
 
-## License
+### v3.2.0
+- Introduced explicit interaction modes (Compose, Execute, Review).
+- Compressed Platform Drafts into collapsed accordion cards.
+- Unified YouTube destinations under a single platform card.
+- Moved Platform Management into Settings.
+- Reduced template workflow visual footprint.
+- Improved 1080p usability through layout regression.
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+## Codex
 
-## Acknowledgments
+The product spec lives in `/codex`. Start with the index:
 
-Special thanks to my Discord for giving me a nudge on what to build and my project manager for giving me such a task to do.
-
+- [Codex index](codex/README.md)

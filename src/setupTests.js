@@ -3,3 +3,19 @@
 // expect(element).toHaveTextContent(/react/i)
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
+
+const originalError = console.error;
+
+beforeAll(() => {
+  console.error = (...args) => {
+    const combined = args.map((arg) => String(arg)).join(' ');
+    if (combined.includes('ReactDOMTestUtils.act')) {
+      return;
+    }
+    originalError(...args);
+  };
+});
+
+afterAll(() => {
+  console.error = originalError;
+});
