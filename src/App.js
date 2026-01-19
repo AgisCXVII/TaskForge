@@ -1,9 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
-import { COMPOSE_METRICS, COMPOSE_TOOL_CURATION } from "./data/composeData";
-import { PLAN_CHOREOGRAPHY, PLAN_METRICS } from "./data/planData";
 
-const APP_VERSION = "0.0.6d";
+const APP_VERSION = "0.0.6e";
 
 const YOUTUBE_DESTINATIONS = [
   {
@@ -189,88 +187,12 @@ const getDefaultPost = (platforms) => {
   };
 };
 
-const normalizeHashtags = (hashtags) =>
-  hashtags
-    .split(/[^\w#]+/)
-    .map((tag) => tag.trim())
-    .filter(Boolean)
-    .map((tag) => (tag.startsWith("#") ? tag : `#${tag}`));
-
-const truncateToLimit = (text, limit) => {
-  if (text.length <= limit) return { text, wasTruncated: false };
-  if (limit <= 1) return { text: text.slice(0, limit), wasTruncated: true };
-  return { text: `${text.slice(0, limit - 1).trimEnd()}…`, wasTruncated: true };
-};
-
-const buildPlatformCopy = (post, platform) => {
-  const hashtags = normalizeHashtags(post.hashtags);
-  const baseTitle = post.title;
-  let resolvedTitle = baseTitle;
-  if (platform.id.startsWith("youtube")) {
-    resolvedTitle = post.youtubeTitleOverride || baseTitle;
-  }
-  if (platform.id === "reddit") {
-    resolvedTitle = post.redditTitleOverride || baseTitle;
-  }
-  const hashtagLimit = platform.hashtagPolicy === "allowed" ? hashtags.length : platform.hashtagLimit;
-  const appliedHashtags =
-    platform.hashtagPolicy === "avoid" ? [] : hashtags.slice(0, hashtagLimit);
-
-  const hashtagsRemoved =
-    platform.hashtagPolicy === "avoid"
-      ? hashtags.length > 0
-      : hashtags.length > appliedHashtags.length;
-
-  const hashtagBlock =
-    appliedHashtags.length === 0
-      ? ""
-      : platform.hashtagPolicy === "limited" && post.description
-      ? `\n\n${appliedHashtags.join(" ")}`
-      : ` ${appliedHashtags.join(" ")}`;
-
-  const contentBase = [resolvedTitle, post.description, post.link]
-    .filter(Boolean)
-    .join("\n\n");
-
-  const combined = `${contentBase}${hashtagBlock}`.trim();
-  const { text, wasTruncated } = truncateToLimit(combined, platform.characterLimit);
-
-  return {
-    text,
-    wasTruncated,
-    hashtagsRemoved,
-    appliedHashtagsCount: appliedHashtags.length,
-    totalLength: combined.length,
-  };
-};
-
 const replaceTemplateVariables = (pattern, variables) =>
   pattern
     .replaceAll("{TITLE}", variables.title)
     .replaceAll("{BODY}", variables.body)
     .replaceAll("{LINK}", variables.link)
     .replaceAll("{HASHTAGS}", variables.hashtags);
-
-const readinessStates = {
-  unknown: "unknown",
-  ready: "ready",
-  notReady: "not-ready",
-};
-
-const DELIVER_WORKFLOW_STATS = [
-  {
-    title: "Ship targets",
-    description: "Confirm destinations and owners.",
-  },
-  {
-    title: "Compliance sweep",
-    description: "Check rights, restrictions, and approvals.",
-  },
-  {
-    title: "Live monitoring",
-    description: "Track posts for the first 60 minutes.",
-  },
-];
 
 const mediaLabels = {
   required: "Media required",
@@ -361,13 +283,10 @@ function App() {
     group: "Custom",
   });
   const [editingPlatformId, setEditingPlatformId] = useState(null);
-  const [openErrors, setOpenErrors] = useState({});
-  const [readiness, setReadiness] = useState({});
   const [redditSubInput, setRedditSubInput] = useState("");
   const [redditRulesInput, setRedditRulesInput] = useState("");
   const [redditNotesInput, setRedditNotesInput] = useState("");
   const [savedSubreddits, setSavedSubreddits] = useState([]);
-  const [checklistState, setChecklistState] = useState({});
   const [dryRun, setDryRun] = useState(false);
   const [expandedDrafts, setExpandedDrafts] = useState({});
   const [singleExpand, setSingleExpand] = useState(false);
@@ -375,8 +294,8 @@ function App() {
   const [showRedditSettings, setShowRedditSettings] = useState(false);
   const [templateLoaded, setTemplateLoaded] = useState(false);
   const [readinessChecking, setReadinessChecking] = useState({});
-  const [postingPlatforms, setPostingPlatforms] = useState({});
   const [postingAll, setPostingAll] = useState(false);
+  const [deliverStatusMessage, setDeliverStatusMessage] = useState("");
   const showPlanPanel = activeMode === "plan";
   const showComposePanel = activeMode === "compose";
   const showDeliverPanel = activeMode === "deliver";
@@ -385,9 +304,7 @@ function App() {
     const storedPlatforms = localStorage.getItem("crosspost.platforms");
     const storedTemplates = localStorage.getItem("crosspost.templates");
     const storedPost = localStorage.getItem("crosspost.post");
-    const storedReadiness = localStorage.getItem("crosspost.readiness");
     const storedSubs = localStorage.getItem("crosspost.redditSubs");
-    const storedChecklist = localStorage.getItem("crosspost.checklists");
 
     if (storedPlatforms) {
       setPlatforms(JSON.parse(storedPlatforms));
@@ -398,14 +315,8 @@ function App() {
     if (storedPost) {
       setPost((prev) => ({ ...prev, ...JSON.parse(storedPost) }));
     }
-    if (storedReadiness) {
-      setReadiness(JSON.parse(storedReadiness));
-    }
     if (storedSubs) {
       setSavedSubreddits(JSON.parse(storedSubs));
-    }
-    if (storedChecklist) {
-      setChecklistState(JSON.parse(storedChecklist));
     }
   }, []);
 
@@ -422,16 +333,8 @@ function App() {
   }, [post]);
 
   useEffect(() => {
-    localStorage.setItem("crosspost.readiness", JSON.stringify(readiness));
-  }, [readiness]);
-
-  useEffect(() => {
     localStorage.setItem("crosspost.redditSubs", JSON.stringify(savedSubreddits));
   }, [savedSubreddits]);
-
-  useEffect(() => {
-    localStorage.setItem("crosspost.checklists", JSON.stringify(checklistState));
-  }, [checklistState]);
 
   useEffect(() => {
     setPost((prev) => ({
@@ -594,36 +497,25 @@ function App() {
 
   const getReadinessStatus = (platformId) => {
     if (readinessChecking[platformId]) return "checking";
-    if (readiness[platformId] === readinessStates.ready) return "ready";
-    if (readiness[platformId] === readinessStates.notReady) return "attention";
     return "unknown";
   };
 
   const getReadinessLabel = (platformId) => {
     const status = getReadinessStatus(platformId);
-    if (status === "ready") return "Ready";
-    if (status === "attention") return "Blocked";
     if (status === "checking") return "Checking";
     return "Unknown";
   };
 
-  const getMissingRequirements = useCallback(
+  const getRequiredFieldSummary = useCallback(
     (platform) => {
-      const missing = [];
-      if (!platform.uploadUrl) {
-        missing.push("Upload URL missing.");
-      }
-      if (platform.mediaRequirement === "required" && !post.mediaFileName) {
-        missing.push("Media required.");
-      }
-      if (platform.id === "reddit") {
-        if (post.redditPostLocation === "subreddit" && post.redditSubreddits.length === 0) {
-          missing.push("Select at least one subreddit.");
-        }
-      }
-      return missing;
+      const requiresTitle = platform.id === "youtube" || platform.id === "reddit";
+      const requiresMedia = platform.mediaRequirement === "required";
+      return {
+        title: requiresTitle ? "Yes" : "No",
+        media: requiresMedia ? "Yes" : "No",
+      };
     },
-    [post.mediaFileName, post.redditPostLocation, post.redditSubreddits.length]
+    []
   );
 
   const getDestinationLabel = (platform, primaryPlatform) => {
@@ -711,14 +603,11 @@ function App() {
     );
     setShowRedditSettings(false);
     setExpandedDrafts({});
-    setChecklistState({});
-    setReadiness({});
-    setOpenErrors({});
     setSingleExpand(false);
     setShowNotes(false);
     setReadinessChecking({});
-    setPostingPlatforms({});
     setPostingAll(false);
+    setDeliverStatusMessage("");
   };
 
   const handleTemplateSave = () => {
@@ -879,9 +768,6 @@ function App() {
     setEditingPlatformId(platform.id);
   };
 
-  const needsPlatformConfig = (platform) =>
-    !platform.uploadUrl || !platform.destinationLabel || platform.characterLimit <= 0;
-
   const handlePlatformToggleEnabled = (platformId) => {
     setPlatforms((prev) =>
       prev.map((platform) =>
@@ -909,31 +795,13 @@ function App() {
     });
   };
 
-  const handleOpenUpload = (platform) => {
-    if (dryRun) {
-      setOpenErrors((prev) => ({
-        ...prev,
-        [platform.id]: "Dry run is enabled. Disable it to open upload pages.",
-      }));
-      return;
-    }
-    if (!platform.uploadUrl) {
-      setOpenErrors((prev) => ({
-        ...prev,
-        [platform.id]: "Upload URL missing. Edit platform to add one.",
-      }));
-      return;
-    }
-    setOpenErrors((prev) => ({ ...prev, [platform.id]: "" }));
-    window.open(platform.uploadUrl, "_blank", "noopener,noreferrer");
-  };
-
   const handleRecheckReadiness = () => {
     if (enabledDraftPlatforms.length === 0) return;
     const next = {};
     enabledDraftPlatforms.forEach((platform) => {
       next[platform.id] = true;
     });
+    setDeliverStatusMessage("");
     setReadinessChecking((prev) => ({ ...prev, ...next }));
     setTimeout(() => {
       setReadinessChecking((prev) => {
@@ -943,63 +811,16 @@ function App() {
         });
         return updated;
       });
-      setReadiness((prev) => {
-        const updated = { ...prev };
-        enabledDraftPlatforms.forEach((platform) => {
-          const missing = getMissingRequirements(platform);
-          updated[platform.id] =
-            missing.length === 0 ? readinessStates.ready : readinessStates.notReady;
-        });
-        return updated;
-      });
+      setDeliverStatusMessage(
+        "Posting engine not connected yet. Extension arrives in v0.0.7."
+      );
     }, 700);
-  };
-
-  const handlePost = (platform) => {
-    setPostingPlatforms((prev) => ({ ...prev, [platform.id]: true }));
-    handleOpenUpload(platform);
-    setTimeout(
-      () => setPostingPlatforms((prev) => ({ ...prev, [platform.id]: false })),
-      1200
-    );
   };
 
   const handlePostAll = () => {
     setPostingAll(true);
     setTimeout(() => setPostingAll(false), 1400);
   };
-
-  useEffect(() => {
-    if (activeMode !== "deliver" || enabledDraftPlatforms.length === 0) return;
-    const timeout = setTimeout(() => {
-      const next = {};
-      enabledDraftPlatforms.forEach((platform) => {
-        next[platform.id] = true;
-      });
-      setReadinessChecking((prev) => ({ ...prev, ...next }));
-
-      setTimeout(() => {
-        setReadinessChecking((prev) => {
-          const updated = { ...prev };
-          enabledDraftPlatforms.forEach((platform) => {
-            updated[platform.id] = false;
-          });
-          return updated;
-        });
-        setReadiness((prev) => {
-          const updated = { ...prev };
-          enabledDraftPlatforms.forEach((platform) => {
-            const missing = getMissingRequirements(platform);
-            updated[platform.id] =
-              missing.length === 0 ? readinessStates.ready : readinessStates.notReady;
-          });
-          return updated;
-        });
-      }, 700);
-    }, 200);
-
-    return () => clearTimeout(timeout);
-  }, [activeMode, enabledDraftPlatforms, getMissingRequirements]);
 
   const handleAddSubreddit = () => {
     const trimmed = redditSubInput.trim().replace(/^r\//i, "");
@@ -1026,45 +847,6 @@ function App() {
     }));
   };
 
-  const handleChecklistToggle = (platformId, item) => {
-    setChecklistState((prev) => ({
-      ...prev,
-      [platformId]: {
-        ...prev[platformId],
-        [item]: !prev[platformId]?.[item],
-      },
-    }));
-  };
-
-  const platformProgress = useMemo(() => {
-    const progressByPlatform = {};
-    let completedPlatforms = 0;
-
-    enabledDraftPlatforms.forEach((platform) => {
-      const readinessState = readiness[platform.id] || readinessStates.unknown;
-      const items =
-        readinessState === readinessStates.notReady
-          ? ["Log in", ...platform.checklist]
-          : platform.checklist;
-      const checks = checklistState[platform.id] || {};
-      const completedCount = items.filter((item) => checks[item]).length;
-      const isReady = items.length > 0 && completedCount === items.length;
-      progressByPlatform[platform.id] = {
-        total: items.length,
-        completed: completedCount,
-        isReady,
-        items,
-      };
-      if (isReady) completedPlatforms += 1;
-    });
-
-    return {
-      completedPlatforms,
-      totalPlatforms: enabledDraftPlatforms.length,
-      progressByPlatform,
-    };
-  }, [checklistState, enabledDraftPlatforms, readiness]);
-
   const handleToggleDraft = (platformId) => {
     setExpandedDrafts((prev) => {
       const next = {
@@ -1090,8 +872,7 @@ function App() {
             <span className="version-pill">v{APP_VERSION}</span>
           </div>
           <p className="subtitle">
-            Create one post object, then generate platform-specific outputs with the
-            right constraints and manual posting checklist.
+            Plan destinations, draft the post once, and launch manual delivery.
           </p>
         </div>
         <div className="header-actions">
@@ -1141,7 +922,7 @@ function App() {
                 <h3>Next steps</h3>
                 <ul>
                   <li>Select target platforms and destinations</li>
-                  <li>Pick a quick preset if it matches your plan</li>
+                  <li>Use a preset only if it helps</li>
                   <li>Confirm Reddit post location and targets</li>
                   <li>Then move to Compose</li>
                 </ul>
@@ -1149,7 +930,10 @@ function App() {
             </div>
             <div className="plan-sections">
               <div>
-                <p className="section-label">Quick presets</p>
+                <p className="section-label">Presets (optional)</p>
+                <p className="helper-text">
+                  Presets only toggle platform selection. You can ignore them.
+                </p>
                 <div className="preset-grid">
                   {QUICK_PRESETS.map((preset) => (
                     <button
@@ -1164,102 +948,66 @@ function App() {
                   ))}
                 </div>
               </div>
-              <div className="plan-overview">
-                <div>
-                  <p className="section-label">Plan metrics</p>
-                  <div className="metric-grid">
-                    {PLAN_METRICS.map((metric) => (
-                      <div key={metric.title} className="metric-card">
-                        <p className="metric-title">{metric.title}</p>
-                        <p className="metric-description">{metric.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="panel-subsection plan-choreography">
-                  <p className="section-label">Choreography</p>
-                  <ul className="info-list">
-                    {PLAN_CHOREOGRAPHY.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
               <div className="platforms">
                 <h3>Target platforms</h3>
                 <div className="platform-grid">
                   {platforms
                     .filter((platform) => platform.enabled)
-                    .map((platform) => (
-                      <label key={platform.id} className="platform-card">
-                        <input
-                          type="checkbox"
-                          checked={post.platforms.includes(platform.id)}
-                          onChange={() => {
-                            const wasEnabled = post.platforms.includes(platform.id);
-                            handlePlatformToggle(platform.id);
-                            if (platform.id === "reddit") {
-                              setShowRedditSettings(!wasEnabled);
-                            }
-                          }}
-                        />
-              <div className="platform-card-body">
-                <p className="platform-name">{platform.name}</p>
-                <p className="platform-meta">
-                  Limit {platform.characterLimit} chars · {platform.hashtagLimit} hashtags
-                </p>
-                <p className="platform-meta">
-                  {mediaLabels[platform.mediaRequirement || "optional"]}
-                </p>
-                {platform.id === "youtube" && (
-                  <>
-                              <div className="inline-field">
-                                <span>Destination</span>
-                                <select
-                                  value={post.youtubeDestination}
-                                  onChange={(event) =>
-                                    handlePostChange("youtubeDestination", event.target.value)
-                                  }
-                                >
-                                  {YOUTUBE_DESTINATIONS.map((dest) => (
-                                    <option key={dest.id} value={dest.id}>
+                    .map((platform) => {
+                      const isSelected = post.platforms.includes(platform.id);
+                      return (
+                        <label
+                          key={platform.id}
+                          className={`platform-card ${isSelected ? "" : "inactive"}`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {
+                              handlePlatformToggle(platform.id);
+                              if (platform.id === "reddit") {
+                                setShowRedditSettings(!isSelected);
+                              }
+                            }}
+                          />
+                          <div className="platform-card-body">
+                            <p className="platform-name">{platform.name}</p>
+                            {platform.id === "youtube" ? (
+                              <>
+                                <div className="inline-field">
+                                  <span>Destination</span>
+                                  <select
+                                    value={post.youtubeDestination}
+                                    onChange={(event) =>
+                                      handlePostChange("youtubeDestination", event.target.value)
+                                    }
+                                  >
+                                    {YOUTUBE_DESTINATIONS.map((dest) => (
+                                      <option key={dest.id} value={dest.id}>
                                       {dest.name}
                                     </option>
                                   ))}
                                 </select>
                               </div>
-                              <label className="toggle">
-                                <input
-                                  type="checkbox"
-                                  checked={post.youtubeGenerateAll}
-                                  onChange={() =>
-                                    handlePostChange(
-                                      "youtubeGenerateAll",
-                                      !post.youtubeGenerateAll
-                                    )
-                                  }
-                                />
-                                Generate all destinations
-                              </label>
-                            </>
-                          )}
-                          {needsPlatformConfig(platform) && (
-                            <button
-                              type="button"
-                              className="ghost-button config-button"
-                              onClick={(event) => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                setShowSettings(true);
-                                handlePlatformEdit(platform);
-                              }}
-                            >
-                              Configure in settings
-                            </button>
-                          )}
-                        </div>
-                      </label>
-                    ))}
+                              </>
+                            ) : (
+                              <p className="platform-meta">
+                                Destination:{" "}
+                                {platform.id === "reddit"
+                                  ? post.redditPostLocation === "profile"
+                                    ? "Profile post"
+                                    : "Subreddit post"
+                                  : platform.destinationLabel || "Not set"}
+                              </p>
+                            )}
+                            <p className="platform-meta">
+                              Media required:{" "}
+                              {platform.mediaRequirement === "required" ? "Yes" : "No"}
+                            </p>
+                          </div>
+                        </label>
+                      );
+                    })}
                 </div>
               </div>
               <div className="plan-summary">
@@ -1449,6 +1197,9 @@ function App() {
                     onChange={(event) => handlePostChange("link", event.target.value)}
                     placeholder="https://example.com"
                   />
+                  <p className="helper-text">
+                    Used where supported. Otherwise included in description.
+                  </p>
                 </label>
                 <label className="field">
                   <span>Hashtags</span>
@@ -1458,9 +1209,9 @@ function App() {
                     onChange={(event) => handlePostChange("hashtags", event.target.value)}
                     placeholder="#creator #video #launch"
                   />
-                  {!post.hashtags && (
-                    <p className="warning-text subtle">Consider adding hashtags if you use them regularly.</p>
-                  )}
+                  <p className="helper-text">
+                    Optional. Useful for Shorts, TikTok, and Instagram.
+                  </p>
                 </label>
                 <label className="field">
                   <span>Media file</span>
@@ -1472,26 +1223,10 @@ function App() {
               </div>
               <div className="compose-side">
                 <div className="panel-subsection">
-                  <p className="section-label">Compose metrics</p>
-                  <div className="metric-grid">
-                    {COMPOSE_METRICS.map((metric) => (
-                      <div key={metric.title} className="metric-card">
-                        <p className="metric-title">{metric.title}</p>
-                        <p className="metric-description">{metric.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="panel-subsection">
-                  <p className="section-label">Tool curation</p>
-                  <ul className="info-list">
-                    {COMPOSE_TOOL_CURATION.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="panel-subsection">
                   <p className="section-label">Title overrides</p>
+                  <p className="helper-text">
+                    Overrides only apply when filled. Blank uses Base title.
+                  </p>
                   {post.platforms.includes("youtube") && (
                     <label className="field">
                       <span>YouTube title override</span>
@@ -1732,34 +1467,13 @@ function App() {
               <div>
                 <h2>Deliver</h2>
                 <p className="panel-subtitle">Drafts are derived from the base post and are read-only.</p>
-                <p className="panel-progress">
-                  Completed {platformProgress.completedPlatforms} of {platformProgress.totalPlatforms} platforms
-                </p>
               </div>
               <div className="mode-hint">
                 <h3>Posting workflow</h3>
                 <ul>
-                  <li>Expand a platform to see checklist and warnings</li>
-                  <li>Copy draft, open upload, complete checklist</li>
-                  <li>Completed count is checklist-based, posting remains manual</li>
+                  <li>Expand a platform to see destination details</li>
+                  <li>Posting is manual until the extension arrives</li>
                 </ul>
-              </div>
-            </div>
-            <div className="deliver-overview">
-              <div>
-                <p className="section-label">Workflow stats</p>
-                <div className="metric-grid">
-                  {DELIVER_WORKFLOW_STATS.map((stat) => (
-                    <div key={stat.title} className="metric-card">
-                      <p className="metric-title">{stat.title}</p>
-                      <p className="metric-description">{stat.description}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="deliver-highlight">
-                <h3>Delivery control center</h3>
-                <p>Prioritize tasks, route approvals, and monitor live executions.</p>
               </div>
             </div>
             <div className="deliver-actions">
@@ -1767,12 +1481,7 @@ function App() {
                 className="primary-button"
                 type="button"
                 onClick={handlePostAll}
-                disabled={
-                  postingAll ||
-                  enabledDraftPlatforms.filter(
-                    (platform) => readiness[platform.id] === readinessStates.ready
-                  ).length === 0
-                }
+                disabled
               >
                 {postingAll ? "Posting…" : "Post all"}
               </button>
@@ -1784,25 +1493,25 @@ function App() {
               >
                 Recheck readiness
               </button>
+              <p className="muted-text">
+                Posting will be enabled when the browser extension ships in v0.0.7.
+              </p>
             </div>
             {enabledDraftPlatforms.length > 0 && (
               <div className="deliver-status">
                 {enabledDraftPlatforms.some((platform) => readinessChecking[platform.id]) ? (
-                  <p className="muted-text">Checking platforms…</p>
+                  <p className="muted-text">
+                    <span className="status-spinner" aria-hidden="true" />
+                    Checking…
+                  </p>
                 ) : (
                   <p className="muted-text">
-                    {enabledDraftPlatforms.filter(
-                      (platform) => readiness[platform.id] === readinessStates.ready
-                    ).length}{" "}
-                    of {enabledDraftPlatforms.length} platforms ready for delivery.
+                    {deliverStatusMessage ||
+                      "Posting engine not connected yet. Extension arrives in v0.0.7."}
                   </p>
                 )}
               </div>
             )}
-            <div className="deliver-final">
-              <h3>Delivery recap</h3>
-              <p>Confirm checklist progress, log outcomes, and capture post-launch insights.</p>
-            </div>
             <div className="accordion">
               {deliverPlatforms.map((platform) => {
                 const isYoutube = platform.id === "youtube";
@@ -1812,30 +1521,29 @@ function App() {
                 const primaryPlatform = isYoutube
                   ? getYoutubeDestinationPlatform(activeYoutubeDestination)
                   : platform;
-                const copy = buildPlatformCopy(post, primaryPlatform);
                 const readinessState = getReadinessStatus(primaryPlatform.id);
-                const checklistInfo = platformProgress.progressByPlatform[primaryPlatform.id];
-                const hasWarnings = copy.wasTruncated || copy.hashtagsRemoved;
-                const mediaWarning =
-                  primaryPlatform.mediaRequirement === "required" && !post.mediaFileName;
                 const isExpanded = expandedDrafts[platform.id];
+                const hasDetails = !!primaryPlatform.destinationLabel;
+                const requiredFields = getRequiredFieldSummary(primaryPlatform);
 
                 return (
                   <article
                     key={platform.id}
-                    className={`accordion-card ${checklistInfo?.isReady ? "ready" : ""} ${
-                      isExpanded ? "expanded" : "collapsed"
-                    }`}
+                    className={`accordion-card ${isExpanded ? "expanded" : "collapsed"}`}
                   >
                     <div className="accordion-header">
-                      <button
-                        type="button"
-                        className="accordion-toggle"
-                        onClick={() => handleToggleDraft(platform.id)}
-                        disabled={postingAll}
-                      >
-                        {isExpanded ? "▾" : "▸"}
-                      </button>
+                      {hasDetails ? (
+                        <button
+                          type="button"
+                          className="accordion-toggle"
+                          onClick={() => handleToggleDraft(platform.id)}
+                          disabled={postingAll}
+                        >
+                          {isExpanded ? "▾" : "▸"}
+                        </button>
+                      ) : (
+                        <span className="accordion-toggle" aria-hidden="true" />
+                      )}
                       <span className={`status-dot ${readinessState}`} />
                       <div className="accordion-info">
                         <p className="platform-name">{platform.name}</p>
@@ -1844,26 +1552,12 @@ function App() {
                         <span className="status-text">{getReadinessLabel(primaryPlatform.id)}</span>
                       </div>
                       <div className="accordion-actions">
-                        {readinessChecking[primaryPlatform.id] ? (
-                          <button className="primary-button" type="button" disabled>
-                            Checking…
-                          </button>
-                        ) : (
-                          <button
-                            className="primary-button"
-                            type="button"
-                            onClick={() => handlePost(primaryPlatform)}
-                            disabled={
-                              postingAll ||
-                              readiness[primaryPlatform.id] !== readinessStates.ready
-                            }
-                          >
-                            {postingPlatforms[primaryPlatform.id] ? "Posting…" : "Post"}
-                          </button>
-                        )}
+                        <button className="primary-button" type="button" disabled>
+                          Post
+                        </button>
                       </div>
                     </div>
-                    {isExpanded && (
+                    {isExpanded && hasDetails && (
                       <div className="accordion-body">
                         {isYoutube && platform.destinations.length > 1 && (
                           <div className="field">
@@ -1889,65 +1583,10 @@ function App() {
                           <p className="platform-meta">
                             Character limit: {primaryPlatform.characterLimit}
                           </p>
-                          <p className="platform-meta">
-                            Hashtag limit: {primaryPlatform.hashtagLimit}
-                          </p>
-                          <p className="platform-meta">
-                            Media: {mediaLabels[primaryPlatform.mediaRequirement || "optional"]}
-                          </p>
+                          <p className="platform-meta">Required title: {requiredFields.title}</p>
+                          <p className="platform-meta">Required media: {requiredFields.media}</p>
                         </div>
-                        {getMissingRequirements(primaryPlatform).length > 0 && (
-                          <div className="warning-text">
-                            Missing required info:
-                            <ul className="missing-list">
-                              {getMissingRequirements(primaryPlatform).map((item) => (
-                                <li key={item}>{item}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        {hasWarnings && <p className="warning-text">Review limits and hashtags.</p>}
-                        {copy.totalLength > primaryPlatform.characterLimit && (
-                          <p className="warning-text">
-                            Draft exceeds the character limit. It was trimmed for safety.
-                          </p>
-                        )}
-                        {copy.hashtagsRemoved && (
-                          <p className="warning-text">
-                            Hashtags adjusted to match platform policy.
-                          </p>
-                        )}
-                        {mediaWarning && (
-                          <p className="warning-text">
-                            Media is required for this platform and none is selected.
-                          </p>
-                        )}
-                        {openErrors[primaryPlatform.id] && (
-                          <p className="error-text">{openErrors[primaryPlatform.id]}</p>
-                        )}
-                        <pre className="output-copy">
-                          {copy.text || "Add content to generate copy."}
-                        </pre>
-                        {primaryPlatform.id === "reddit" && post.redditSubreddits.length > 0 && (
-                          <p className="platform-meta">
-                            Subreddits: {post.redditSubreddits
-                              .map((id) => savedSubreddits.find((sub) => sub.id === id)?.name)
-                              .filter(Boolean)
-                              .join(", ")}
-                          </p>
-                        )}
-                        <ul className="checklist">
-                          {checklistInfo?.items.map((item) => (
-                            <li key={item}>
-                              <input
-                                type="checkbox"
-                                checked={!!checklistState[primaryPlatform.id]?.[item]}
-                                onChange={() => handleChecklistToggle(primaryPlatform.id, item)}
-                              />
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        <p className="platform-meta">Known quirks: Placeholder allowed.</p>
                       </div>
                     )}
                   </article>
@@ -1981,6 +1620,7 @@ function App() {
             </button>
           )}
         </div>
+        <div className="footer-credit">Made with love by Armand Park</div>
       </footer>
 
 

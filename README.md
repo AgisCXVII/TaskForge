@@ -18,6 +18,11 @@ npm start
 
 ## Changelog
 
+### v0.0.6e — Corrective UI alignment and scope rollback
+- Removed non-essential Plan/Compose/Deliver guidance and metrics to keep scope honest.
+- Simplified Plan presets and platform cards to focus on destinations and media requirements.
+- Disabled Deliver posting actions with clear messaging about the v0.0.7 extension.
+
 ### v0.0.6c
 - Removed Copy actions and added Post/Post all controls with posting states.
 - Updated readiness flow to Unknown → Checking → Ready/Blocked with richer details panels.
