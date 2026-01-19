@@ -100,7 +100,11 @@ function App() {
 
   return (
     <div className="App">
-      <h1>TaskForge</h1>
+      <h1>CrossPost</h1>
+      <p className="dev-note">
+        Development note: CrossPost is still in development, and progress is steady now that
+        the web app is considered ready at its base.
+      </p>
       <div className="input-container">
         <input
           type="text"
