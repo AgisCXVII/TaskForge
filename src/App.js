@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
+import { COMPOSE_METRICS, COMPOSE_TOOL_CURATION } from "./data/composeData";
+import { PLAN_CHOREOGRAPHY, PLAN_METRICS } from "./data/planData";
 
-const APP_VERSION = "0.0.6c";
+const APP_VERSION = "0.0.6d";
 
 const YOUTUBE_DESTINATIONS = [
   {
@@ -254,6 +256,21 @@ const readinessStates = {
   ready: "ready",
   notReady: "not-ready",
 };
+
+const DELIVER_WORKFLOW_STATS = [
+  {
+    title: "Ship targets",
+    description: "Confirm destinations and owners.",
+  },
+  {
+    title: "Compliance sweep",
+    description: "Check rights, restrictions, and approvals.",
+  },
+  {
+    title: "Live monitoring",
+    description: "Track posts for the first 60 minutes.",
+  },
+];
 
 const mediaLabels = {
   required: "Media required",
@@ -1147,6 +1164,27 @@ function App() {
                   ))}
                 </div>
               </div>
+              <div className="plan-overview">
+                <div>
+                  <p className="section-label">Plan metrics</p>
+                  <div className="metric-grid">
+                    {PLAN_METRICS.map((metric) => (
+                      <div key={metric.title} className="metric-card">
+                        <p className="metric-title">{metric.title}</p>
+                        <p className="metric-description">{metric.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="panel-subsection plan-choreography">
+                  <p className="section-label">Choreography</p>
+                  <ul className="info-list">
+                    {PLAN_CHOREOGRAPHY.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
               <div className="platforms">
                 <h3>Target platforms</h3>
                 <div className="platform-grid">
@@ -1434,6 +1472,25 @@ function App() {
               </div>
               <div className="compose-side">
                 <div className="panel-subsection">
+                  <p className="section-label">Compose metrics</p>
+                  <div className="metric-grid">
+                    {COMPOSE_METRICS.map((metric) => (
+                      <div key={metric.title} className="metric-card">
+                        <p className="metric-title">{metric.title}</p>
+                        <p className="metric-description">{metric.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="panel-subsection">
+                  <p className="section-label">Tool curation</p>
+                  <ul className="info-list">
+                    {COMPOSE_TOOL_CURATION.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="panel-subsection">
                   <p className="section-label">Title overrides</p>
                   {post.platforms.includes("youtube") && (
                     <label className="field">
@@ -1688,6 +1745,23 @@ function App() {
                 </ul>
               </div>
             </div>
+            <div className="deliver-overview">
+              <div>
+                <p className="section-label">Workflow stats</p>
+                <div className="metric-grid">
+                  {DELIVER_WORKFLOW_STATS.map((stat) => (
+                    <div key={stat.title} className="metric-card">
+                      <p className="metric-title">{stat.title}</p>
+                      <p className="metric-description">{stat.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="deliver-highlight">
+                <h3>Delivery control center</h3>
+                <p>Prioritize tasks, route approvals, and monitor live executions.</p>
+              </div>
+            </div>
             <div className="deliver-actions">
               <button
                 className="primary-button"
@@ -1725,6 +1799,10 @@ function App() {
                 )}
               </div>
             )}
+            <div className="deliver-final">
+              <h3>Delivery recap</h3>
+              <p>Confirm checklist progress, log outcomes, and capture post-launch insights.</p>
+            </div>
             <div className="accordion">
               {deliverPlatforms.map((platform) => {
                 const isYoutube = platform.id === "youtube";

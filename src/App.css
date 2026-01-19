@@ -141,6 +141,12 @@
   gap: 16px;
 }
 
+.plan-overview {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
 .preset-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -373,6 +379,35 @@
   margin-bottom: 12px;
 }
 
+.deliver-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.deliver-highlight,
+.deliver-final {
+  background: #0c1019;
+  border: 1px solid #2d3340;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.deliver-highlight h3,
+.deliver-final h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #e6edf7;
+}
+
+.deliver-highlight p,
+.deliver-final p {
+  margin: 0;
+  font-size: 12px;
+  color: #8a94a6;
+}
+
 .template-actions {
   display: flex;
   flex-wrap: wrap;
@@ -399,6 +434,40 @@
   margin: 0 0 10px;
   font-weight: 600;
   color: #e6e9f2;
+}
+
+.metric-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.metric-card {
+  background: #0c1019;
+  border: 1px solid #2d3340;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.metric-title {
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: #e6edf7;
+}
+
+.metric-description {
+  margin: 0;
+  font-size: 12px;
+  color: #8a94a6;
+}
+
+.info-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: #c7cedf;
+  font-size: 13px;
 }
 
 .preview-grid {
